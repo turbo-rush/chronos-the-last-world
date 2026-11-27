@@ -3,8 +3,8 @@ import './style.css';
 
 const mount = document.querySelector('#world');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x89959a);
-scene.fog = new THREE.FogExp2(0x89959a, 0.012);
+scene.background = new THREE.Color(0xa9b6b6);
+scene.fog = new THREE.FogExp2(0xa9b6b6, 0.008);
 const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 350);
 camera.position.set(0, 5.5, 10);
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -13,19 +13,19 @@ renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.18;
+renderer.toneMappingExposure = 1.38;
 mount.appendChild(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0xc5d7dc, 0x433b35, 2.0));
-const sun = new THREE.DirectionalLight(0xffd2a0, 3.2);
+scene.add(new THREE.HemisphereLight(0xe3f1ef, 0x665b4c, 2.8));
+const sun = new THREE.DirectionalLight(0xffdfb6, 4.0);
 sun.position.set(-35, 55, 24); sun.castShadow = true;
 sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.left=-65; sun.shadow.camera.right=65; sun.shadow.camera.top=65; sun.shadow.camera.bottom=-65;
 scene.add(sun);
-const fill = new THREE.DirectionalLight(0x83b9c4, 1.2); fill.position.set(30,18,-35); scene.add(fill);
+const fill = new THREE.DirectionalLight(0xa3d5e0, 1.8); fill.position.set(30,18,-35); scene.add(fill);
 
 function seeded(n){const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x)}
 function material(color, roughness=1, extra={}){return new THREE.MeshStandardMaterial({color,roughness,...extra})}
-const groundMat=material(0x77766b);
+const groundMat=material(0x969487);
 const groundGeo=new THREE.PlaneGeometry(240,240,110,110); groundGeo.rotateX(-Math.PI/2);
 const pos=groundGeo.attributes.position;
 for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);pos.setY(i,Math.sin(x*.07)*.55+Math.cos(z*.08)*.45+Math.sin((x+z)*.035)*.7+seeded(i)*.16)}
@@ -53,7 +53,7 @@ part(new THREE.SphereGeometry(.4,9,7),cloth,0,2.42,.03).scale.set(1,.38,1);
 part(new THREE.BoxGeometry(.9,.35,.5),dark,0,1.05,.04);
 for(const side of [-1,1]){part(new THREE.CapsuleGeometry(.16,.65,4,6),coat,side*.55,1.35,0).rotation.z=side*.18;part(new THREE.CapsuleGeometry(.19,.65,4,6),dark,side*.25,.42,0)}
 part(new THREE.BoxGeometry(.13,.9,.13),metal,.56,1.4,-.05).rotation.z=-.4;
-player.position.set(0,0,1.8);
+player.position.set(0,0,1.8);\nconst playerRim = new THREE.PointLight(0xb8dce2, 1.7, 8); playerRim.position.set(0,2.5,1.2); player.add(playerRim);
 
 const resourceNodes=[];
 function resource(x,z,type){const group=new THREE.Group();if(type==='wood'){const log=new THREE.Mesh(new THREE.CylinderGeometry(.2,.24,2.1,7),material(0x876044));log.rotation.z=Math.PI/2;log.position.y=.24;log.castShadow=true;group.add(log);const end=new THREE.Mesh(new THREE.CircleGeometry(.2,8),material(0xc49a6c));end.rotation.y=Math.PI/2;end.position.set(1.06,.24,0);group.add(end)}else if(type==='stone'){const mesh=new THREE.Mesh(new THREE.DodecahedronGeometry(.72,1),material(0x8a9290));mesh.scale.set(1,.7,1.1);mesh.position.y=.45;mesh.castShadow=true;group.add(mesh)}else{const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.8,0),new THREE.MeshStandardMaterial({color:0x75c9c1,metalness:.55,roughness:.22,emissive:0x1b6969,emissiveIntensity:.65}));crystal.scale.set(.7,1.5,.7);crystal.position.y=1;crystal.castShadow=true;group.add(crystal);const glow=new THREE.PointLight(0x62d5c8,1.2,5);glow.position.y=1;group.add(glow)}group.position.set(x,0,z);world.add(group);resourceNodes.push({group,type,taken:false,baseY:0})}
@@ -65,22 +65,22 @@ function notify(message){toast.textContent=message;toast.classList.add('show');c
 function updateHud(){document.querySelector('#wood').textContent=wood;document.querySelector('#stone').textContent=stoneCount;document.querySelector('#shards').textContent=shards;document.querySelector('#healthText').textContent=health+'%';document.querySelector('#healthFill').style.width=health+'%';document.querySelector('#objectiveHint').textContent=wood<3?'Собери '+(3-wood)+' ед. древесины':'Материалы собраны · исследуй руины'}
 function nearest(){let best=null,d=3.1;for(const n of resourceNodes){if(n.taken)continue;const dist=Math.hypot(n.group.position.x-player.position.x,n.group.position.z-player.position.z);if(dist<d){d=dist;best=n}}return best}
 function collect(){const n=nearest();if(!n)return;if(n.type==='wood')wood++;if(n.type==='stone')stoneCount++;if(n.type==='shard')shards++;n.taken=true;world.remove(n.group);updateHud();notify(n.type==='wood'?'ДРЕВЕСИНА +1':n.type==='stone'?'КАМЕНЬ +1':'ХРОНО-ОСКОЛОК +1');if(wood>=3){document.querySelector('#objective').textContent='Убежище готово к строительству';document.querySelector('#objectiveHint').textContent='Исследуй древние руины и найди хроно-осколки'} }
-function begin(){started=true;document.querySelector('#startScreen').classList.add('hidden');notify('ЦИКЛ 001 НАЧАЛСЯ. ВЫЖИВАЙ.');renderer.domElement.requestPointerLock?.()}
+function begin(){started=true;document.querySelector('#startScreen').classList.add('hidden');notify('ЦИКЛ 001 НАЧАЛСЯ. ВЫЖИВАЙ.');if(innerWidth>700)renderer.domElement.requestPointerLock?.()}
 document.querySelector('#startBtn').addEventListener('click',begin);
 document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE'&&started)collect()});
 document.addEventListener('keyup',e=>keys[e.code]=false);
-document.addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.002;pitch=Math.max(-.2,Math.min(.75,pitch+e.movementY*.0015))}});
+document.addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.002;pitch=Math.max(-.15,Math.min(.55,pitch+e.movementY*.0012))}});\nlet lookPointer=null,lastTouchX=0,lastTouchY=0;renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&started){lookPointer=e.pointerId;lastTouchX=e.clientX;lastTouchY=e.clientY}});renderer.domElement.addEventListener('pointermove',e=>{if(e.pointerType==='touch'&&e.pointerId===lookPointer){yaw-=(e.clientX-lastTouchX)*.006;pitch=Math.max(-.12,Math.min(.5,pitch+(e.clientY-lastTouchY)*.003));lastTouchX=e.clientX;lastTouchY=e.clientY}});['pointerup','pointercancel'].forEach(type=>renderer.domElement.addEventListener(type,e=>{if(e.pointerId===lookPointer)lookPointer=null}));
 renderer.domElement.addEventListener('click',()=>{if(started&&document.pointerLockElement!==renderer.domElement)renderer.domElement.requestPointerLock?.()});
 document.querySelector('#soundBtn').addEventListener('click',()=>notify('ЗВУКОВОЙ СЛОЙ БУДЕТ ДОБАВЛЕН В СЛЕДУЮЩЕМ ЭТАПЕ'));
-const touchMap={up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD'};for(const [id,key] of Object.entries(touchMap)){const b=document.querySelector('#'+id);b.addEventListener('pointerdown',e=>{e.preventDefault();keys[key]=true});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>keys[key]=false))}
+const stick=document.querySelector('#stick'),stickKnob=document.querySelector('#stickKnob');let stickPointer=null,stickX=0,stickY=0;function setStick(e){const r=stick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy;const max=r.width*.34,len=Math.hypot(dx,dy);if(len>max){dx=dx/len*max;dy=dy/len*max}stickX=dx/max;stickY=dy/max;stickKnob.style.left=(50+stickX*34)+'%';stickKnob.style.top=(50+stickY*34)+'%'}stick.addEventListener('pointerdown',e=>{e.preventDefault();stickPointer=e.pointerId;stick.setPointerCapture(e.pointerId);setStick(e)});stick.addEventListener('pointermove',e=>{if(e.pointerId===stickPointer)setStick(e)});function resetStick(){stickPointer=null;stickX=0;stickY=0;stickKnob.style.left='50%';stickKnob.style.top='50%'}['pointerup','pointercancel','lostpointercapture'].forEach(ev=>stick.addEventListener(ev,resetStick));document.querySelector('#collectBtn').addEventListener('pointerdown',e=>{e.preventDefault();if(started)collect()});
 function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}addEventListener('resize',resize);
 
 function animate(now){requestAnimationFrame(animate);const dt=Math.min((now-last)/1000,.04);last=now;
  if(started){elapsed+=dt;const remaining=Math.max(0,1800-elapsed);const mm=String(Math.floor(remaining/60)).padStart(2,'0'),ss=String(Math.floor(remaining%60)).padStart(2,'0');timerEl.textContent=mm+':'+ss;document.querySelector('#timerFill').style.width=(remaining/1800*100)+'%';document.querySelector('#cycleState').textContent='СТАБИЛЬНОСТЬ '+Math.floor(remaining/18)+'%';if(remaining===0&&elapsed-dt<1800){document.querySelector('#flash').classList.add('hit');notify('КОНЕЦ ЭПОХИ. МИР ПЕРЕРОЖДАЕТСЯ…');scene.fog.color.set(0x302b39);scene.fog.density=.025;sun.intensity=.7}
- const forward=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0),side=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0);const moving=forward||side;if(moving){const angle=yaw;const dx=(Math.sin(angle)*forward+Math.cos(angle)*side)*dt*5;const dz=(Math.cos(angle)*forward-Math.sin(angle)*side)*dt*5;player.position.x+=dx;player.position.z+=dz;player.rotation.y=Math.atan2(dx,dz);player.position.x=THREE.MathUtils.clamp(player.position.x,-65,65);player.position.z=THREE.MathUtils.clamp(player.position.z,-65,65);player.position.y=Math.abs(Math.sin(now*.012))*.055}
+ const forward=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-stickY,side=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+stickX;const moving=forward||side;if(moving){const angle=yaw;const dx=(Math.sin(angle)*forward+Math.cos(angle)*side)*dt*5;const dz=(Math.cos(angle)*forward-Math.sin(angle)*side)*dt*5;player.position.x+=dx;player.position.z+=dz;player.rotation.y=Math.atan2(dx,dz);player.position.x=THREE.MathUtils.clamp(player.position.x,-65,65);player.position.z=THREE.MathUtils.clamp(player.position.z,-65,65);player.position.y=Math.abs(Math.sin(now*.012))*.055}
  const n=nearest();interaction.classList.toggle('show',!!n);if(n)interaction.textContent='[ E ] СОБРАТЬ '+(n.type==='wood'?'ДРЕВЕСИНУ':n.type==='stone'?'КАМЕНЬ':'ХРОНО-ОСКОЛОК');
  }
- const camDist=8.5;const target=new THREE.Vector3(player.position.x-Math.sin(yaw)*camDist,player.position.y+3.1+pitch*3,player.position.z-Math.cos(yaw)*camDist);camera.position.lerp(target,.09);camera.lookAt(player.position.x,player.position.y+1.2,player.position.z);
+ const camDist=innerWidth<=700?6.8:8.0;const target=new THREE.Vector3(player.position.x-Math.sin(yaw)*camDist,player.position.y+(innerWidth<=700?3.6:3.3)+pitch*2.4,player.position.z-Math.cos(yaw)*camDist);camera.position.lerp(target,.12);camera.lookAt(player.position.x,player.position.y+1.25,player.position.z);
  const t=now*.001;flame.scale.y=.85+Math.sin(t*9)*.2;fireLight.intensity=4.2+Math.sin(t*13)*.8;for(const n of resourceNodes){if(!n.taken&&n.type==='shard')n.group.rotation.y+=dt*.35}
  renderer.render(scene,camera)}
 requestAnimationFrame(animate);
