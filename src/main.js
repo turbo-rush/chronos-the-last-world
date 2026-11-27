@@ -3,29 +3,36 @@ import './style.css';
 
 const mount = document.querySelector('#world');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xa9b6b6);
-scene.fog = new THREE.FogExp2(0xa9b6b6, 0.008);
+scene.background = new THREE.Color(0x9aa9a5);
+scene.fog = new THREE.FogExp2(0x9aa9a5, 0.0062);
 const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 350);
 camera.position.set(0, 5.5, 10);
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.8));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.65));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.38;
+renderer.toneMappingExposure = 1.12;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 mount.appendChild(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0xe3f1ef, 0x665b4c, 2.8));
-const sun = new THREE.DirectionalLight(0xffdfb6, 4.0);
+scene.add(new THREE.HemisphereLight(0xc9e0e5, 0x51483b, 1.75));
+const ambientFill = new THREE.DirectionalLight(0xd0dedb, 0.85);
+ambientFill.position.set(12, 14, 18); scene.add(ambientFill);
+const sun = new THREE.DirectionalLight(0xffd5a1, 3.1);
 sun.position.set(-35, 55, 24); sun.castShadow = true;
-sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.left=-65; sun.shadow.camera.right=65; sun.shadow.camera.top=65; sun.shadow.camera.bottom=-65;
+sun.shadow.mapSize.set(2048,2048); sun.shadow.bias=-0.00018; sun.shadow.normalBias=0.025; sun.shadow.camera.left=-65; sun.shadow.camera.right=65; sun.shadow.camera.top=65; sun.shadow.camera.bottom=-65;
 scene.add(sun);
-const fill = new THREE.DirectionalLight(0xa3d5e0, 1.8); fill.position.set(30,18,-35); scene.add(fill);
+const fill = new THREE.DirectionalLight(0x9dc6cb, 1.1); fill.position.set(30,18,-35); scene.add(fill);
 
 function seeded(n){const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x)}
 function material(color, roughness=1, extra={}){return new THREE.MeshStandardMaterial({color,roughness,...extra})}
-const groundMat=material(0x969487);
+const groundCanvas=document.createElement('canvas');groundCanvas.width=groundCanvas.height=512;
+const groundCtx=groundCanvas.getContext('2d');groundCtx.fillStyle='#77796b';groundCtx.fillRect(0,0,512,512);
+for(let i=0;i<18000;i++){const x=seeded(i*2)*512,y=seeded(i*3+1)*512,r=.4+seeded(i+8)*2.8;groundCtx.fillStyle=i%4===0?'rgba(190,170,132,.12)':i%3===0?'rgba(35,47,42,.13)':'rgba(220,210,177,.055)';groundCtx.beginPath();groundCtx.arc(x,y,r,0,Math.PI*2);groundCtx.fill()}
+const groundTexture=new THREE.CanvasTexture(groundCanvas);groundTexture.wrapS=groundTexture.wrapT=THREE.RepeatWrapping;groundTexture.repeat.set(18,18);groundTexture.colorSpace=THREE.SRGBColorSpace;groundTexture.anisotropy=8;
+const groundMat=new THREE.MeshStandardMaterial({color:0xb1aa91,map:groundTexture,roughness:1});
 const groundGeo=new THREE.PlaneGeometry(240,240,110,110); groundGeo.rotateX(-Math.PI/2);
 const pos=groundGeo.attributes.position;
 for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);pos.setY(i,Math.sin(x*.07)*.55+Math.cos(z*.08)*.45+Math.sin((x+z)*.035)*.7+seeded(i)*.16)}
@@ -33,14 +40,16 @@ groundGeo.computeVertexNormals();
 const ground=new THREE.Mesh(groundGeo,groundMat);ground.receiveShadow=true;scene.add(ground);
 
 const world=new THREE.Group();scene.add(world);
-function rock(x,z,s=1,color=0x666b68){const g=new THREE.IcosahedronGeometry(s,1);const p=g.attributes.position;for(let i=0;i<p.count;i++){const k=seeded(i+Math.round(x*9+z*5));p.setXYZ(i,p.getX(i)*(0.78+k*.42),p.getY(i)*(0.72+k*.45),p.getZ(i)*(0.8+k*.4))}g.computeVertexNormals();const m=new THREE.Mesh(g,material(color));m.position.set(x,s*.45,z);m.rotation.set(seeded(x+4)*.4,seeded(z+8)*6,seeded(x+z)*.3);m.scale.set(1,.8,1.25);m.castShadow=true;m.receiveShadow=true;world.add(m);return m}
-function pine(x,z,s=1){const tree=new THREE.Group();const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.16*s,.27*s,2.2*s,7),material(0x493e35));trunk.position.y=1.1*s;trunk.castShadow=true;tree.add(trunk);for(let i=0;i<3;i++){const crown=new THREE.Mesh(new THREE.ConeGeometry((1.25-i*.22)*s,2.5*s,7),material(i===0?0x35433e:0x435248));crown.position.y=(2.1+i*.72)*s;crown.castShadow=true;tree.add(crown)}tree.position.set(x,0,z);world.add(tree)}
+function rock(x,z,s=1,color=0x666b68){const g=new THREE.IcosahedronGeometry(s,2);const p=g.attributes.position;for(let i=0;i<p.count;i++){const k=seeded(i+Math.round(x*9+z*5));const n=.82+k*.34;p.setXYZ(i,p.getX(i)*n,p.getY(i)*(.72+k*.4),p.getZ(i)*(.8+k*.38))}g.computeVertexNormals();const m=new THREE.Mesh(g,material(color,.94));m.position.set(x,s*.43,z);m.rotation.set(seeded(x+4)*.4,seeded(z+8)*6,seeded(x+z)*.3);m.scale.set(1,.82,1.2);m.castShadow=true;m.receiveShadow=true;world.add(m);const seam=new THREE.Mesh(new THREE.IcosahedronGeometry(s*.18,1),material(0xaaa18a));seam.position.set(x+s*.32,s*.52,z-s*.18);seam.scale.set(1,.35,.8);seam.castShadow=true;world.add(seam);return m}
+function pine(x,z,s=1){const tree=new THREE.Group();const bark=material(0x554237);const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.15*s,.29*s,2.8*s,8),bark);trunk.position.y=1.4*s;trunk.castShadow=true;tree.add(trunk);for(let j=0;j<4;j++){const branch=new THREE.Mesh(new THREE.ConeGeometry((1.45-j*.22)*s,(2.25-j*.12)*s,9),material([0x263b35,0x34483d,0x405344,0x50604a][j]));branch.position.y=(2.05+j*.64)*s;branch.rotation.y=seeded(x+j)*.5;branch.castShadow=true;branch.receiveShadow=true;tree.add(branch)}for(let j=0;j<3;j++){const root=new THREE.Mesh(new THREE.ConeGeometry(.22*s,.85*s,5),bark);root.position.set((j-1)*.19*s,.25*s,.1*s);root.rotation.z=(j-1)*.55;tree.add(root)}tree.position.set(x,0,z);world.add(tree)}
 function deadTree(x,z,s=1){const g=new THREE.Group();const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.12*s,.25*s,3.8*s,7),material(0x50443b));trunk.position.y=1.9*s;trunk.rotation.z=-.12;trunk.castShadow=true;g.add(trunk);for(let i=0;i<3;i++){const b=new THREE.Mesh(new THREE.CylinderGeometry(.055*s,.1*s,1.7*s,6),material(0x50443b));b.position.set((i-1)*.42*s,2.6*s,.02);b.rotation.z=(i-1)*-.65;g.add(b)}g.position.set(x,0,z);world.add(g)}
-for(let i=0;i<125;i++){let x=(seeded(i*2)-.5)*145,z=(seeded(i*3+1)-.5)*145;if(Math.hypot(x,z)<12)continue;if(i%3===0)pine(x,z,.7+seeded(i+9)*.8);else if(i%3===1)deadTree(x,z,.65+seeded(i+5)*.9);else rock(x,z,.5+seeded(i+7)*1.5)}
+for(let i=0;i<190;i++){let x=(seeded(i*2)-.5)*155,z=(seeded(i*3+1)-.5)*155;if(Math.hypot(x,z)<13)continue;if(i%5===0)pine(x,z,.65+seeded(i+9)*.85);else if(i%5===1||i%5===2)deadTree(x,z,.65+seeded(i+5)*.9);else rock(x,z,.45+seeded(i+7)*1.6,i%2?0x696b63:0x77766b)}
 // Distant broken monoliths frame the playable valley.
 for(let i=0;i<13;i++){const a=i/13*Math.PI*2,r=48+seeded(i+90)*18,x=Math.cos(a)*r,z=Math.sin(a)*r;const h=5+seeded(i+120)*13;const pillar=new THREE.Mesh(new THREE.CylinderGeometry(1.3,2.1,h,5,1),material(0x555d5c));pillar.position.set(x,h/2,z);pillar.rotation.z=(seeded(i+5)-.5)*.18;pillar.castShadow=true;world.add(pillar)}
 // Ruined stone arch and a small camp made from crafted meshes.
-const ruin=new THREE.Group();const stone=material(0x77776e);for(const [x,y,z,sx,sy,sz] of [[-2.8,2.5,-8,.7,5,.8],[2.8,2.5,-8,.7,5,.8],[0,5,-8,3.5,.65,.8]]){const b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),stone);b.position.set(x,y,z);b.rotation.z=(seeded(x+8)-.5)*.08;b.castShadow=true;ruin.add(b)}scene.add(ruin);
+const ruin=new THREE.Group();const stone=material(0x77776e,.94);const carvedStone=material(0x99917d,.88);for(const [x,y,z,sx,sy,sz] of [[-2.8,2.5,-8,.7,5,.8],[2.8,2.5,-8,.7,5,.8],[0,5,-8,3.5,.65,.8]]){const b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),stone);b.position.set(x,y,z);b.rotation.z=(seeded(x+8)-.5)*.08;b.castShadow=true;ruin.add(b)}for(let i=0;i<7;i++){const chip=new THREE.Mesh(new THREE.BoxGeometry(.14,.14,.9),carvedStone);chip.position.set(-2.8+i*.85,4.7,-7.55);chip.rotation.z=.12;ruin.add(chip)}
+const rune=new THREE.Mesh(new THREE.TorusGeometry(.7,.055,8,36),new THREE.MeshStandardMaterial({color:0x6ab8ae,emissive:0x286b68,emissiveIntensity:.75,metalness:.55,roughness:.35}));rune.position.set(0,2.4,-7.35);ruin.add(rune);
+const runeLight=new THREE.PointLight(0x65bcb1,1.4,8);runeLight.position.set(0,2.4,-6.8);ruin.add(runeLight);scene.add(ruin);
 const camp=new THREE.Group();const tentMat=material(0x79624b);const tent=new THREE.Mesh(new THREE.ConeGeometry(2.5,3.3,4),tentMat);tent.position.set(0,1.65,0);tent.rotation.y=Math.PI/4;tent.castShadow=true;camp.add(tent);const fireBase=new THREE.Mesh(new THREE.TorusGeometry(.8,.12,6,14),material(0x4d4a43));fireBase.rotation.x=Math.PI/2;fireBase.position.set(3,.12,1);camp.add(fireBase);const flame=new THREE.Mesh(new THREE.ConeGeometry(.35,1.1,7),new THREE.MeshBasicMaterial({color:0xff9b43}));flame.position.set(3,.65,1);camp.add(flame);const fireLight=new THREE.PointLight(0xff8c43,5,13);fireLight.position.set(3,1,1);camp.add(fireLight);camp.position.set(-7,0,5);scene.add(camp);
 
 // The survivor is a sculpted low-poly character, not a placeholder primitive.
