@@ -3,6 +3,32 @@ import './style.css';
 
 const mount = document.querySelector('#world');
 const scene = new THREE.Scene();
+// Cinematic sky: a layered dusk gradient with a warm sun halo and cool upper atmosphere.
+const skyGeometry = new THREE.SphereGeometry(300, 40, 24);
+const skyMaterial = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, fog: false,
+  uniforms: { sunDirection: { value: new THREE.Vector3(-35,55,24).normalize() } },
+  vertexShader: `varying vec3 vDirection; void main(){ vDirection=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader: `uniform vec3 sunDirection; varying vec3 vDirection;
+    void main(){
+      float h=clamp(vDirection.y*.5+.5,0.0,1.0);
+      vec3 horizon=vec3(0.69,0.62,0.49);
+      vec3 midSky=vec3(0.34,0.48,0.51);
+      vec3 zenith=vec3(0.105,0.19,0.25);
+      vec3 col=mix(horizon,midSky,smoothstep(0.02,0.48,h));
+      col=mix(col,zenith,smoothstep(0.42,0.96,h));
+      float sun=pow(max(dot(normalize(vDirection),normalize(sunDirection)),0.0),48.0);
+      float haze=pow(max(dot(normalize(vDirection),normalize(sunDirection)),0.0),5.0);
+      col+=vec3(1.0,0.58,0.29)*sun*.9+vec3(0.9,0.47,0.25)*haze*.16;
+      float horizonGlow=exp(-abs(vDirection.y)*12.0);
+      col+=vec3(0.23,0.19,0.13)*horizonGlow*.18;
+      gl_FragColor=vec4(col,1.0);
+    }`
+});
+const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+sky.renderOrder = -1000;
+scene.add(sky);
+
 scene.background = new THREE.Color(0x9aa9a5);
 scene.fog = new THREE.FogExp2(0x9aa9a5, 0.0062);
 const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 350);
@@ -40,6 +66,45 @@ groundGeo.computeVertexNormals();
 const ground=new THREE.Mesh(groundGeo,groundMat);ground.receiveShadow=true;scene.add(ground);
 
 const world=new THREE.Group();scene.add(world);
+// Ground cover: hundreds of individually varied grass tufts break up the bare terrain.
+const bladeGeometry = new THREE.BufferGeometry();
+bladeGeometry.setAttribute('position', new THREE.Float32BufferAttribute([
+  0,0,0, -.10,.62,0, .02,.04,.05,
+  0,0,0, .08,.48,.08, .02,.04,.05,
+  0,0,0, .02,.55,-.10, .02,.04,.05,
+  0,0,0, -.02,.38,.12, .02,.04,.05
+],3));
+bladeGeometry.computeVertexNormals();
+const grassMaterial = new THREE.MeshStandardMaterial({color:0x829078, roughness:1, side:THREE.DoubleSide});
+const grass = new THREE.InstancedMesh(bladeGeometry,grassMaterial,760);
+const grassDummy = new THREE.Object3D();
+for(let i=0;i<760;i++){
+  const x=(seeded(i+401)-.5)*150, z=(seeded(i+801)-.5)*150;
+  if(Math.hypot(x,z)<11) { grassDummy.position.set(1000,0,1000); grassDummy.updateMatrix(); grass.setMatrixAt(i,grassDummy.matrix); continue; }
+  grassDummy.position.set(x,Math.sin(x*.07)*.55+Math.cos(z*.08)*.45+Math.sin((x+z)*.035)*.7,z);
+  grassDummy.rotation.set(0,seeded(i+1201)*Math.PI*2,0);
+  const scale=.45+seeded(i+1601)*1.1;
+  grassDummy.scale.set(scale,scale,scale);
+  grassDummy.updateMatrix(); grass.setMatrixAt(i,grassDummy.matrix);
+  grass.setColorAt(i,new THREE.Color().setHSL(.23+seeded(i+2001)*.07,.16+seeded(i+2401)*.18,.27+seeded(i+2801)*.13));
+}
+grass.instanceMatrix.needsUpdate=true;
+if(grass.instanceColor) grass.instanceColor.needsUpdate=true;
+grass.frustumCulled=false;
+world.add(grass);
+// Small weathered pebbles add scale and texture close to the ground.
+const pebbleGeo = new THREE.IcosahedronGeometry(.13,1);
+const pebbleMat = new THREE.MeshStandardMaterial({color:0x77776c,roughness:1});
+const pebbles = new THREE.InstancedMesh(pebbleGeo,pebbleMat,420);
+for(let i=0;i<420;i++){
+  const x=(seeded(i+3001)-.5)*145,z=(seeded(i+3401)-.5)*145;
+  grassDummy.position.set(x,Math.sin(x*.07)*.55+Math.cos(z*.08)*.45+Math.sin((x+z)*.035)*.7+.05,z);
+  grassDummy.rotation.set(seeded(i+3801),seeded(i+4201)*6,seeded(i+4601));
+  const scale=.35+seeded(i+5001)*1.8; grassDummy.scale.set(scale,scale*.55,scale*1.35);
+  grassDummy.updateMatrix(); pebbles.setMatrixAt(i,grassDummy.matrix);
+}
+pebbles.instanceMatrix.needsUpdate=true; pebbles.frustumCulled=false; world.add(pebbles);
+
 function rock(x,z,s=1,color=0x666b68){const g=new THREE.IcosahedronGeometry(s,2);const p=g.attributes.position;for(let i=0;i<p.count;i++){const k=seeded(i+Math.round(x*9+z*5));const n=.82+k*.34;p.setXYZ(i,p.getX(i)*n,p.getY(i)*(.72+k*.4),p.getZ(i)*(.8+k*.38))}g.computeVertexNormals();const m=new THREE.Mesh(g,material(color,.94));m.position.set(x,s*.43,z);m.rotation.set(seeded(x+4)*.4,seeded(z+8)*6,seeded(x+z)*.3);m.scale.set(1,.82,1.2);m.castShadow=true;m.receiveShadow=true;world.add(m);const seam=new THREE.Mesh(new THREE.IcosahedronGeometry(s*.18,1),material(0xaaa18a));seam.position.set(x+s*.32,s*.52,z-s*.18);seam.scale.set(1,.35,.8);seam.castShadow=true;world.add(seam);return m}
 function pine(x,z,s=1){const tree=new THREE.Group();const bark=material(0x554237);const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.15*s,.29*s,2.8*s,8),bark);trunk.position.y=1.4*s;trunk.castShadow=true;tree.add(trunk);for(let j=0;j<4;j++){const branch=new THREE.Mesh(new THREE.ConeGeometry((1.45-j*.22)*s,(2.25-j*.12)*s,9),material([0x263b35,0x34483d,0x405344,0x50604a][j]));branch.position.y=(2.05+j*.64)*s;branch.rotation.y=seeded(x+j)*.5;branch.castShadow=true;branch.receiveShadow=true;tree.add(branch)}for(let j=0;j<3;j++){const root=new THREE.Mesh(new THREE.ConeGeometry(.22*s,.85*s,5),bark);root.position.set((j-1)*.19*s,.25*s,.1*s);root.rotation.z=(j-1)*.55;tree.add(root)}tree.position.set(x,0,z);world.add(tree)}
 function deadTree(x,z,s=1){const g=new THREE.Group();const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.12*s,.25*s,3.8*s,7),material(0x50443b));trunk.position.y=1.9*s;trunk.rotation.z=-.12;trunk.castShadow=true;g.add(trunk);for(let i=0;i<3;i++){const b=new THREE.Mesh(new THREE.CylinderGeometry(.055*s,.1*s,1.7*s,6),material(0x50443b));b.position.set((i-1)*.42*s,2.6*s,.02);b.rotation.z=(i-1)*-.65;g.add(b)}g.position.set(x,0,z);world.add(g)}
@@ -62,6 +127,18 @@ part(new THREE.SphereGeometry(.4,9,7),cloth,0,2.42,.03).scale.set(1,.38,1);
 part(new THREE.BoxGeometry(.9,.35,.5),dark,0,1.05,.04);
 for(const side of [-1,1]){part(new THREE.CapsuleGeometry(.16,.65,4,6),coat,side*.55,1.35,0).rotation.z=side*.18;part(new THREE.CapsuleGeometry(.19,.65,4,6),dark,side*.25,.42,0)}
 part(new THREE.BoxGeometry(.13,.9,.13),metal,.56,1.4,-.05).rotation.z=-.4;
+
+// Survivor gear: a worn field pack, rolled bedroll, straps and shoulder protection.
+const packMat=material(0x5a5143), packDark=material(0x343b38), brass=material(0x9a7951);
+part(new THREE.BoxGeometry(.72,.86,.38),packMat,0,1.42,-.43);
+part(new THREE.BoxGeometry(.76,.18,.42),packDark,0,1.88,-.43);
+part(new THREE.CylinderGeometry(.13,.13,.78,8),cloth,0,2.02,-.48).rotation.z=Math.PI/2;
+for(const side of [-1,1]){
+  part(new THREE.BoxGeometry(.10,.72,.10),packDark,side*.31,1.43,-.19).rotation.z=side*.12;
+  part(new THREE.SphereGeometry(.22,8,6),packMat,side*.48,1.72,-.02).scale.set(1,.72,1);
+  part(new THREE.BoxGeometry(.10,.20,.08),brass,side*.28,1.08,.22);
+}
+part(new THREE.TorusGeometry(.34,.075,6,12),packDark,0,1.95,.02).rotation.x=Math.PI/2;
 player.position.set(0,0,1.8);
 const playerRim = new THREE.PointLight(0xb8dce2, 1.7, 8); playerRim.position.set(0,2.5,1.2); player.add(playerRim);
 
