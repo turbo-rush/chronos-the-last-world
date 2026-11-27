@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10151b" />
+    <meta name="description" content="CHRONOS: THE LAST WORLD — survive the end of time." />
+    <title>CHRONOS: THE LAST WORLD</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app">
+      <div id="world"></div>
+      <div class="vignette"></div>
+      <header class="topbar">
+        <a class="brand" href="#"><span class="brand-mark">C</span><span>CHRONOS<small>THE LAST WORLD</small></span></a>
+        <div class="season"><span class="live-dot"></span> СЕЗОН 01 <b>·</b> ЭПОХА ПЕПЛА</div>
+        <button class="icon-btn" id="soundBtn" aria-label="Звук">♫</button>
+      </header>
+      <main class="hud">
+        <section class="left-panel">
+          <div class="eyebrow"><span class="eyebrow-line"></span> ПОСЛЕДНИЙ ЦИКЛ</div>
+          <h1>МИР<br><em>УМИРАЕТ.</em></h1>
+          <p class="intro">Время — твой главный враг.<br>Каждое решение меняет исход.</p>
+          <div class="countdown-card">
+            <div class="card-label"><span class="pulse"></span> ДО КОНЦА ЭПОХИ</div>
+            <div class="timer" id="timer">30:00</div>
+            <div class="timer-track"><i id="timerFill"></i></div>
+            <div class="timer-foot"><span>ЦИКЛ 001</span><span id="cycleState">СТАБИЛЬНОСТЬ 100%</span></div>
+          </div>
+          <div class="objective">
+            <div class="objective-icon">⌖</div>
+            <div><small>ТЕКУЩАЯ ЦЕЛЬ</small><strong id="objective">Найди ресурсы для убежища</strong><span id="objectiveHint">Собери 3 единицы дерева</span></div>
+          </div>
+        </section>
+        <section class="right-panel">
+          <div class="region-tag"><span>◈</span> СЕВЕРНЫЕ ПУСТОШИ <small>ЗОНА 01</small></div>
+          <div class="threat"><span class="threat-symbol">△</span><div><small>УРОВЕНЬ УГРОЗЫ</small><strong>НЕСТАБИЛЬНЫЙ</strong></div></div>
+        </section>
+        <section class="bottom-hud">
+          <div class="survivor">
+            <div class="avatar">✦</div><div><small>ВЫЖИВШИЙ</small><strong>ПУТНИК <span>УРОВЕНЬ 01</span></strong></div>
+          </div>
+          <div class="resources">
+            <div class="resource"><span class="resource-icon wood">⌁</span><div><small>ДРЕВЕСИНА</small><b id="wood">0</b></div></div>
+            <div class="resource"><span class="resource-icon stone">◆</span><div><small>КАМЕНЬ</small><b id="stone">0</b></div></div>
+            <div class="resource"><span class="resource-icon shard">✧</span><div><small>ХРОНО-ОСКОЛКИ</small><b id="shards">0</b></div></div>
+          </div>
+          <div class="health"><div class="health-head"><small>СОСТОЯНИЕ</small><b id="healthText">100%</b></div><div class="health-track"><i id="healthFill"></i></div><div class="energy-label">ЭНЕРГИЯ <span>80 / 100</span></div></div>
+        </section>
+      </main>
+      <div class="crosshair">+</div>
+      <div class="toast" id="toast"></div>
+      <div class="interaction" id="interaction">[ E ]  СОБРАТЬ РЕСУРС</div>
+      <div class="start-screen" id="startScreen">
+        <div class="start-kicker">ОДИН МИР · ОДИН ШАНС · ТРИДЦАТЬ МИНУТ</div>
+        <h2>CHRONOS<span>:</span><br>THE LAST WORLD</h2>
+        <p>Цикл начинается. Мир ещё помнит, каким он был.</p>
+        <button id="startBtn">ВОЙТИ В ПОСЛЕДНИЙ МИР <span>→</span></button>
+        <div class="controls-hint">W A S D — ДВИЖЕНИЕ <i>·</i> МЫШЬ — ОБЗОР <i>·</i> E — СОБРАТЬ</div>
+      </div>
+      <div class="mobile-controls"><button id="up">▲</button><div><button id="left">◀</button><button id="down">▼</button><button id="right">▶</button></div></div>
+      <div class="screen-flash" id="flash"></div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
